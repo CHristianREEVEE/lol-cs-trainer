@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f0d14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="补兵训练">
+<title>LOL 补兵训练器</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root {
+    --bg: #0f0d14;
+    --bg-2: #1a1721;
+    --card: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+    --accent: #a78bfa;
+    --green: #4ade80;
+    --red: #f87171;
+    --gold: #fbbf24;
+    --text: #e8e6ef;
+    --text-dim: #6b7280;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+  }
+  h1 { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+  .hud {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 900px;
+  }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 6px 18px;
+    text-align: center;
+    min-width: 72px;
+    flex: 1;
+    max-width: 120px;
+  }
+  .stat-num { font-size: 24px; font-weight: 700; line-height: 1.2; }
+  .stat-label { font-size: 11px; color: var(--text-dim); }
+  .stat.gold .stat-num { color: var(--gold); }
+  .stat.cs .stat-num { color: var(--accent); }
+  .stat.miss .stat-num { color: var(--red); }
+  .stat.time .stat-num { color: var(--text); }
+  #canvas-wrap {
+    width: 100%;
+    max-width: 900px;
+    position: relative;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    background: #0a0810;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    touch-action: none;
+    cursor: crosshair;
+  }
+  .controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+    justify-content: center;
+  }
+  .btn {
+    background: #7c3aed;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 28px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn.green { background: #059669; }
+  .btn.gray { background: #475569; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .hint {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 10px;
+    line-height: 1.6;
+  }
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .overlay.show { display: flex; }
+  .result-card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    text-align: center;
+    max-width: 320px;
+    width: 90%;
+  }
+  .result-card h2 { font-size: 20px; margin-bottom: 16px; }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+  }
+  .result-row:last-of-type { border: none; margin-bottom: 20px; }
+  .result-row b { color: var(--accent); }
+  .cd-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .cd-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    transition: width .05s linear;
+  }
+  .cd-wrap { width: 100%; max-width: 900px; margin-top: 6px; }
+  .cd-label { font-size: 11px; color: var(--text-dim); display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<h1>♟️ LOL 补兵训练器</h1>
+
+<div class="hud">
+  <div class="stat cs"><div class="stat-num" id="cs-count">0</div><div class="stat-label">CS</div></div>
+  <div class="stat miss"><div class="stat-num" id="miss-count">0</div><div class="stat-label">漏刀</div></div>
+  <div class="stat gold"><div class="stat-num" id="gold-count">0</div><div class="stat-label">金币</div></div>
+  <div class="stat time"><div class="stat-num" id="timer">10:00</div><div class="stat-label">剩余</div></div>
+  <div class="stat"><div class="stat-num" id="cs-min">0.0</div><div class="stat-label">CS/分</div></div>
+</div>
+
+<div id="canvas-wrap">
+  <canvas id="game" width="880" height="340"></canvas>
+</div>
+
+<div class="cd-wrap">
+  <div class="cd-label"><span>攻击冷却</span><span id="cd-text">就绪</span></div>
+  <div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div>
+</div>
+
+<div class="controls">
+  <button class="btn green" id="start-btn" onclick="startGame()">开始训练</button>
+  <button class="btn gray" id="reset-btn" onclick="resetGame()">重置</button>
+</div>
+
+<div class="hint">
+  点击红色小兵发起攻击 · 击杀小兵获得CS · 10分钟内尽可能多补兵<br>
+  M=近战兵(80HP/21金) · C=远程兵(40HP/14金) · 攻击伤害60 · 冷却0.8秒
+</div>
+
+<div class="overlay" id="result-overlay">
+  <div class="result-card">
+    <h2>训练结束</h2>
+    <div class="result-row"><span>补刀 CS</span><b id="r-cs">0</b></div>
+    <div class="result-row"><span>漏刀</span><b id="r-miss">0</b></div>
+    <div class="result-row"><span>补刀率</span><b id="r-rate">0%</b></div>
+    <div class="result-row"><span>金币</span><b id="r-gold">0</b></div>
+    <div class="result-row"><span>CS/分</span><b id="r-csmin">0.0</b></div>
+    <button class="btn" onclick="closeResult()">再来一局</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+// ===== Game State =====
+let minions = [];
+let effects = [];
+let cs = 0, miss = 0, gold = 0;
+let timeLeft = 600;
+let running = false;
+let waveCount = 0;
+let lastWave = 0;
+let lastAttack = 0;
+let attackCD = 800;
+let playerDmg = 60;
+let targetMinion = null;
+let timerInterval = null;
+
+const PLAYER_X = 60;
+const PLAYER_Y = H / 2;
+const ENEMY_X = W - 60;
+
+// ===== Minion Types =====
+const TYPES = {
+  melee:  { hp: 80, dmg: 12, range: 35, aspd: 1200, speed: 0.35, gold: 21, size: 9 },
+  caster: { hp: 40, dmg: 20, range: 50, aspd: 1500, speed: 0.35, gold: 14, size: 7 },
+};
+
+class Minion {
+  constructor(team, type, lane) {
+    const t = TYPES[type];
+    this.team = team;
+    this.type = type;
+    this.maxHp = t.hp;
+    this.hp = t.hp;
+    this.dmg = t.dmg;
+    this.range = t.range;
+    this.aspd = t.aspd;
+    this.speed = t.speed;
+    this.gold = t.gold;
+    this.size = t.size;
+    this.color = team === 'blue' ? '#3b82f6' : '#ef4444';
+    this.glow = team === 'blue' ? 'rgba(59,130,246,0.3)' : 'rgba(239,68,68,0.3)';
+    this.x = team === 'blue' ? PLAYER_X + 20 : ENEMY_X - 20;
+    this.y = H / 2 + (lane - 1) * 22;
+    this.lastAtk = 0;
+    this.target = null;
+    this.alive = true;
+    this.deadTime = 0;
+  }
+
+  update(dt, now) {
+    if (!this.alive) return;
+
+    if (!this.target || !this.target.alive) {
+      this.target = findNearestEnemy(this);
+    }
+
+    if (this.target) {
+      const dx = this.target.x - this.x;
+      const dist = Math.abs(dx);
+      if (dist > this.range) {
+        this.x += Math.sign(dx) * this.speed * dt;
+      } else if (now - this.lastAtk > this.aspd) {
+        this.lastAtk = now;
+        this.target.hp -= this.dmg;
+        effects.push({ type: 'minion_atk', from: this.x, to: this.target.x, y: this.y, life: 100 });
+        if (this.target.hp <= 0 && this.target.alive) {
+          this.target.alive = false;
+          this.target.deadTime = now;
+          if (this.target.team === 'red') {
+            miss++; // player missed a CS
+            updateHUD();
+          }
+        }
+      }
+    } else {
+      this.x += (this.team === 'blue' ? 1 : -1) * this.speed * dt;
+    }
+  }
+
+  draw() {
+    if (!this.alive) return;
+    // glow
+    ctx.fillStyle = this.glow;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size + 4, 0, Math.PI * 2);
+    ctx.fill();
+    // body
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+    // type letter
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 8px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(this.type === 'melee' ? 'M' : 'C', this.x, this.y + 3);
+    // hp bar
+    const bw = 28, bh = 3;
+    const bx = this.x - bw / 2;
+    const by = this.y - this.size - 7;
+    ctx.fillStyle = '#222';
+    ctx.fillRect(bx, by, bw, bh);
+    const pct = Math.max(0, this.hp / this.maxHp);
+    ctx.fillStyle = pct > 0.5 ? '#4ade80' : pct > 0.25 ? '#eab308' : '#ef4444';
+    ctx.fillRect(bx, by, bw * pct, bh);
+  }
+}
+
+function findNearestEnemy(m) {
+  let best = null, bestD = Infinity;
+  for (const e of minions) {
+    if (!e.alive || e.team === m.team) continue;
+    const d = Math.abs(e.x - m.x);
+    if (d < bestD) { bestD = d; best = e; }
+  }
+  return best;
+}
+
+function spawnWave() {
+  waveCount++;
+  for (let i = 0; i < 3; i++) {
+    minions.push(new Minion('blue', 'melee', i));
+    minions.push(new Minion('red', 'melee', i));
+    minions.push(new Minion('blue', 'caster', i));
+    minions.push(new Minion('red', 'caster', i));
+  }
+}
+
+// ===== Input =====
+function getCanvasPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scale = W / rect.width;
+  const cx = e.touches ? e.touches[0].clientX : e.clientX;
+  const cy = e.touches ? e.touches[0].clientY : e.clientY;
+  return { x: (cx - rect.left) * scale, y: (cy - rect.top) * scale };
+}
+
+function handleAttack(e) {
+  e.preventDefault();
+  if (!running) return;
+  const now = performance.now();
+  if (now - lastAttack < attackCD) return;
+
+  const { x, y } = getCanvasPos(e);
+  let clicked = null, minD = Infinity;
+  for (const m of minions) {
+    if (!m.alive || m.team !== 'red') continue;
+    const d = Math.hypot(m.x - x, m.y - y);
+    if (d < m.size + 10 && d < minD) { minD = d; clicked = m; }
+  }
+  if (!clicked) return;
+
+  lastAttack = now;
+  targetMinion = clicked;
+
+  // Deal damage
+  clicked.hp -= playerDmg;
+  effects.push({ type: 'player_atk', from: PLAYER_X, to: clicked.x, y: clicked.y, life: 150 });
+
+  if (clicked.hp <= 0 && clicked.alive) {
+    clicked.alive = false;
+    clicked.deadTime = now;
+    cs++;
+    gold += clicked.gold;
+    effects.push({ type: 'kill', x: clicked.x, y: clicked.y, life: 300, r: 0 });
+    targetMinion = null;
+  }
+  updateHUD();
+}
+
+canvas.addEventListener('click', handleAttack);
+canvas.addEventListener('touchstart', handleAttack, { passive: false });
+
+// ===== Render =====
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // bg gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#0d0b12');
+  grad.addColorStop(1, '#0a0810');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // lane path
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 40;
+  ctx.beginPath();
+  ctx.moveTo(0, H / 2);
+  ctx.lineTo(W, H / 2);
+  ctx.stroke();
+  ctx.lineWidth = 1;
+
+  // center line
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.setLineDash([4, 6]);
+  ctx.beginPath();
+  ctx.moveTo(W / 2, 10);
+  ctx.lineTo(W / 2, H - 10);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // tower markers
+  ctx.fillStyle = 'rgba(59,130,246,0.15)';
+  ctx.fillRect(20, H/2 - 30, 16, 60);
+  ctx.fillStyle = 'rgba(239,68,68,0.15)';
+  ctx.fillRect(W - 36, H/2 - 30, 16, 60);
+
+  // player champion marker
+  ctx.fillStyle = '#a78bfa';
+  ctx.beginPath();
+  ctx.arc(PLAYER_X, PLAYER_Y, 8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(167,139,250,0.4)';
+  ctx.beginPath();
+  ctx.arc(PLAYER_X, PLAYER_Y, 14, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = '#a78bfa';
+  ctx.font = 'bold 9px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('YOU', PLAYER_X, PLAYER_Y - 14);
+
+  // minions
+  for (const m of minions) m.draw();
+
+  // target indicator
+  if (targetMinion && targetMinion.alive) {
+    const pulse = Math.sin(performance.now() / 100) * 3 + targetMinion.size + 6;
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(targetMinion.x, targetMinion.y, pulse, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+  }
+
+  // effects
+  for (let i = effects.length - 1; i >= 0; i--) {
+    const ef = effects[i];
+    if (ef.type === 'player_atk') {
+      ctx.strokeStyle = `rgba(251,191,36,${ef.life / 150})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(ef.from, PLAYER_Y);
+      ctx.lineTo(ef.to, ef.y);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      ef.life -= 8;
+    } else if (ef.type === 'minion_atk') {
+      ctx.strokeStyle = `rgba(255,255,255,${ef.life / 200})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(ef.from, ef.y);
+      ctx.lineTo(ef.to, ef.y);
+      ctx.stroke();
+      ef.life -= 6;
+    } else if (ef.type === 'kill') {
+      ctx.strokeStyle = `rgba(74,222,128,${ef.life / 300})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(ef.x, ef.y, ef.r, 0, Math.PI * 2);
+      ctx.stroke();
+      ef.r += 1.5;
+      ef.life -= 10;
+    }
+    if (ef.life <= 0) effects.splice(i, 1);
+  }
+
+  // wave indicator
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`第 ${waveCount} 波`, 10, 18);
+}
+
+// ===== Game Loop =====
+let lastFrame = 0;
+function loop(now) {
+  if (!running) return;
+  const dt = (now - lastFrame) / 16.67; // normalize to ~60fps frames
+  lastFrame = now;
+
+  // wave spawn
+  if (now - lastWave > 25000 || lastWave === 0) {
+    spawnWave();
+    lastWave = now;
+  }
+
+  // update minions
+  for (const m of minions) m.update(dt, now);
+
+  // cleanup dead (after 500ms)
+  minions = minions.filter(m => m.alive || (now - m.deadTime < 500));
+
+  // cooldown bar
+  const cdElapsed = now - lastAttack;
+  const cdPct = Math.min(1, cdElapsed / attackCD);
+  document.getElementById('cd-fill').style.width = (cdPct * 100) + '%';
+  document.getElementById('cd-text').textContent = cdPct >= 1 ? '就绪 ✓' : '冷却中...';
+
+  draw();
+  requestAnimationFrame(loop);
+}
+
+// ===== HUD =====
+function updateHUD() {
+  document.getElementById('cs-count').textContent = cs;
+  document.getElementById('miss-count').textContent = miss;
+  document.getElementById('gold-count').textContent = gold;
+}
+function updateTimer() {
+  const m = Math.floor(timeLeft / 60);
+  const s = Math.floor(timeLeft % 60);
+  document.getElementById('timer').textContent =
+    `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const elapsed = 600 - timeLeft;
+  document.getElementById('cs-min').textContent =
+    elapsed > 0 ? (cs / (elapsed / 60)).toFixed(1) : '0.0';
+  if (timeLeft <= 0) endGame();
+}
+
+// ===== Game Control =====
+function startGame() {
+  if (running) return;
+  resetGame();
+  running = true;
+  lastFrame = performance.now();
+  lastWave = 0;
+  timerInterval = setInterval(() => { timeLeft -= 1; updateTimer(); }, 1000);
+  requestAnimationFrame(loop);
+  document.getElementById('start-btn').disabled = true;
+}
+
+function endGame() {
+  running = false;
+  clearInterval(timerInterval);
+  document.getElementById('start-btn').disabled = false;
+  const total = cs + miss;
+  document.getElementById('r-cs').textContent = cs;
+  document.getElementById('r-miss').textContent = miss;
+  document.getElementById('r-rate').textContent = total > 0 ? Math.round(cs/total*100) + '%' : '0%';
+  document.getElementById('r-gold').textContent = gold;
+  document.getElementById('r-csmin').textContent = (cs / 10).toFixed(1);
+  document.getElementById('result-overlay').classList.add('show');
+}
+
+function closeResult() {
+  document.getElementById('result-overlay').classList.remove('show');
+  resetGame();
+}
+
+function resetGame() {
+  running = false;
+  clearInterval(timerInterval);
+  minions = [];
+  effects = [];
+  cs = 0; miss = 0; gold = 0;
+  timeLeft = 600;
+  waveCount = 0;
+  targetMinion = null;
+  lastAttack = 0;
+  updateHUD();
+  updateTimer();
+  document.getElementById('cd-fill').style.width = '0%';
+  document.getElementById('cd-text').textContent = '就绪';
+  document.getElementById('start-btn').disabled = false;
+  // draw idle screen
+  draw();
+}
+
+// idle draw
+draw();
+</script>
+</body>
+</html>
