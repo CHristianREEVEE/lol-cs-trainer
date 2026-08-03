@@ -3,526 +3,627 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0f0d14">
+<meta name="theme-color" content="#0a0a0f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="补兵训练">
 <title>LOL 补兵训练器</title>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  :root {
-    --bg: #0f0d14;
-    --bg-2: #1a1721;
-    --card: rgba(255,255,255,0.04);
-    --border: rgba(255,255,255,0.08);
-    --accent: #a78bfa;
-    --green: #4ade80;
-    --red: #f87171;
-    --gold: #fbbf24;
-    --text: #e8e6ef;
-    --text-dim: #6b7280;
-  }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: system-ui, -apple-system, sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 12px;
-  }
-  h1 { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
-  .hud {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
-    justify-content: center;
-    width: 100%;
-    max-width: 900px;
-  }
-  .stat {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 6px 18px;
-    text-align: center;
-    min-width: 72px;
-    flex: 1;
-    max-width: 120px;
-  }
-  .stat-num { font-size: 24px; font-weight: 700; line-height: 1.2; }
-  .stat-label { font-size: 11px; color: var(--text-dim); }
-  .stat.gold .stat-num { color: var(--gold); }
-  .stat.cs .stat-num { color: var(--accent); }
-  .stat.miss .stat-num { color: var(--red); }
-  .stat.time .stat-num { color: var(--text); }
-  #canvas-wrap {
-    width: 100%;
-    max-width: 900px;
-    position: relative;
-  }
-  canvas {
-    display: block;
-    width: 100%;
-    background: #0a0810;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    touch-action: none;
-    cursor: crosshair;
-  }
-  .controls {
-    display: flex;
-    gap: 10px;
-    margin-top: 14px;
-    justify-content: center;
-  }
-  .btn {
-    background: #7c3aed;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 28px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all .15s;
-  }
-  .btn:active { transform: scale(0.96); }
-  .btn.green { background: #059669; }
-  .btn.gray { background: #475569; }
-  .btn:disabled { opacity: .4; cursor: not-allowed; }
-  .hint {
-    text-align: center;
-    font-size: 12px;
-    color: var(--text-dim);
-    margin-top: 10px;
-    line-height: 1.6;
-  }
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.8);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-  }
-  .overlay.show { display: flex; }
-  .result-card {
-    background: var(--bg-2);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 32px;
-    text-align: center;
-    max-width: 320px;
-    width: 90%;
-  }
-  .result-card h2 { font-size: 20px; margin-bottom: 16px; }
-  .result-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 15px;
-  }
-  .result-row:last-of-type { border: none; margin-bottom: 20px; }
-  .result-row b { color: var(--accent); }
-  .cd-bar {
-    height: 3px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-    margin-top: 4px;
-  }
-  .cd-fill {
-    height: 100%;
-    width: 0%;
-    background: var(--accent);
-    transition: width .05s linear;
-  }
-  .cd-wrap { width: 100%; max-width: 900px; margin-top: 6px; }
-  .cd-label { font-size: 11px; color: var(--text-dim); display: flex; justify-content: space-between; }
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0a0a0f;--accent:#a78bfa;--gold:#fbbf24;--green:#4ade80;--red:#f87171}
+body{background:var(--bg);color:#e8e6ef;font-family:system-ui,-apple-system,sans-serif;overflow:hidden;user-select:none;position:fixed;width:100%;height:100%;touch-action:none}
+#wrap{display:flex;flex-direction:column;height:100%;height:100dvh;max-width:520px;margin:0 auto;position:relative}
+/* HUD top bar */
+#hud{display:flex;gap:8px;justify-content:center;align-items:center;padding:10px 12px 6px;background:linear-gradient(180deg,rgba(0,0,0,0.6),transparent);flex-shrink:0}
+.pill{display:flex;align-items:center;gap:6px;background:rgba(15,13,20,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:4px 14px;min-width:72px;justify-content:center}
+.pill .ico{font-size:14px}
+.pill .num{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+.pill .lbl{font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-top:-2px}
+.pill .col{display:flex;flex-direction:column;align-items:center;line-height:1.2}
+/* Canvas */
+#game{flex:1;position:relative;overflow:hidden}
+canvas{display:block;width:100%;height:100%}
+/* Bottom bar */
+#bottom{flex-shrink:0;padding:6px 12px 10px;background:linear-gradient(0deg,rgba(0,0,0,0.6),transparent);display:flex;align-items:center;gap:10px}
+#cd-bar{flex:1;height:28px;background:rgba(255,255,255,0.06);border-radius:8px;overflow:hidden;position:relative;border:1px solid rgba(255,255,255,0.08)}
+#cd-fill{height:100%;background:linear-gradient(90deg,#7c3aed,#a78bfa);width:100%;transition:width 0.05s linear;border-radius:8px}
+#cd-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:12px;font-weight:600;text-shadow:0 1px 2px rgba(0,0,0,0.8)}
+.btn{background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:active{transform:scale(0.96)}
+.btn.sec{background:#374151}
+.btn:disabled{opacity:0.4}
+/* Result */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.overlay.show{display:flex}
+.result-card{background:var(--bg);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:30px 36px;text-align:center;max-width:340px}
+.result-card h2{font-size:22px;margin-bottom:16px;color:var(--accent)}
+.result-card .big{font-size:42px;font-weight:800;color:var(--green);margin:8px 0}
+.result-row{display:flex;justify-content:space-between;padding:6px 0;font-size:14px;border-bottom:1px solid rgba(255,255,255,0.05)}
+.result-row:last-of-type{border:0}
+.result-row span:last-child{font-weight:700}
+/* hint */
+#hint{position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:11px;color:#4b5563;pointer-events:none}
 </style>
 </head>
 <body>
-
-<h1>♟️ LOL 补兵训练器</h1>
-
-<div class="hud">
-  <div class="stat cs"><div class="stat-num" id="cs-count">0</div><div class="stat-label">CS</div></div>
-  <div class="stat miss"><div class="stat-num" id="miss-count">0</div><div class="stat-label">漏刀</div></div>
-  <div class="stat gold"><div class="stat-num" id="gold-count">0</div><div class="stat-label">金币</div></div>
-  <div class="stat time"><div class="stat-num" id="timer">10:00</div><div class="stat-label">剩余</div></div>
-  <div class="stat"><div class="stat-num" id="cs-min">0.0</div><div class="stat-label">CS/分</div></div>
-</div>
-
-<div id="canvas-wrap">
-  <canvas id="game" width="880" height="340"></canvas>
-</div>
-
-<div class="cd-wrap">
-  <div class="cd-label"><span>攻击冷却</span><span id="cd-text">就绪</span></div>
-  <div class="cd-bar"><div class="cd-fill" id="cd-fill"></div></div>
-</div>
-
-<div class="controls">
-  <button class="btn green" id="start-btn" onclick="startGame()">开始训练</button>
-  <button class="btn gray" id="reset-btn" onclick="resetGame()">重置</button>
-</div>
-
-<div class="hint">
-  点击红色小兵发起攻击 · 击杀小兵获得CS · 10分钟内尽可能多补兵<br>
-  M=近战兵(80HP/21金) · C=远程兵(40HP/14金) · 攻击伤害60 · 冷却0.8秒
-</div>
-
-<div class="overlay" id="result-overlay">
-  <div class="result-card">
-    <h2>训练结束</h2>
-    <div class="result-row"><span>补刀 CS</span><b id="r-cs">0</b></div>
-    <div class="result-row"><span>漏刀</span><b id="r-miss">0</b></div>
-    <div class="result-row"><span>补刀率</span><b id="r-rate">0%</b></div>
-    <div class="result-row"><span>金币</span><b id="r-gold">0</b></div>
-    <div class="result-row"><span>CS/分</span><b id="r-csmin">0.0</b></div>
-    <button class="btn" onclick="closeResult()">再来一局</button>
+<div id="wrap">
+  <div id="hud">
+    <div class="pill"><span class="ico">⚔️</span><div class="col"><div class="num" id="hud-cs">0</div><div class="lbl">CS</div></div></div>
+    <div class="pill"><span class="ico">💰</span><div class="col"><div class="num" id="hud-gold" style="color:var(--gold)">0</div><div class="lbl">金币</div></div></div>
+    <div class="pill"><span class="ico">⏱</span><div class="col"><div class="num" id="hud-time">10:00</div><div class="lbl">时间</div></div></div>
+    <div class="pill"><span class="ico">📉</span><div class="col"><div class="num" id="hud-miss" style="color:var(--red)">0</div><div class="lbl">漏刀</div></div></div>
+  </div>
+  <div id="game">
+    <canvas id="cv"></canvas>
+    <div id="hint">点击红色小兵补刀 · 10分钟挑战</div>
+  </div>
+  <div id="bottom">
+    <button class="btn" id="start-btn">开始</button>
+    <div id="cd-bar"><div id="cd-fill"></div><div id="cd-text">就绪</div></div>
+    <button class="btn sec" id="reset-btn">重置</button>
   </div>
 </div>
-
+<div class="overlay" id="result">
+  <div class="result-card">
+    <h2>训练结束</h2>
+    <div class="big" id="r-cs">0</div>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:16px">总补刀数</div>
+    <div class="result-row"><span>补刀率</span><span id="r-rate">0%</span></div>
+    <div class="result-row"><span>漏刀</span><span id="r-miss">0</span></div>
+    <div class="result-row"><span>金币</span><span id="r-gold">0</span></div>
+    <div class="result-row"><span>CS/分钟</span><span id="r-csmin">0.0</span></div>
+    <button class="btn" style="margin-top:20px;width:100%" onclick="closeResult()">再来一局</button>
+  </div>
+</div>
 <script>
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-const W = canvas.width, H = canvas.height;
+"use strict";
+// ===== Canvas =====
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+function resize() {
+  DPR = window.devicePixelRatio || 1;
+  const r = cv.parentElement.getBoundingClientRect();
+  W = r.width; H = r.height;
+  cv.width = W * DPR; cv.height = H * DPR;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize);
 
-// ===== Game State =====
+// ===== Pseudo-3D projection =====
+// World: x = lateral (-1..1), z = depth (0=near..1=far)
+// Lane goes from bottom of screen (near, player) to top (far, enemy)
+function project(x, z) {
+  const topY = H * 0.08;
+  const botY = H * 0.88;
+  const sy = botY - z * (botY - topY);
+  const scale = Math.max(0.3, 1 - z * 0.55);
+  const laneHalf = W * 0.06 + W * 0.20 * scale;
+  const sx = W / 2 + x * laneHalf;
+  return { sx, sy, scale };
+}
+
+// ===== Config =====
+const CFG = {
+  waveInterval: 25000,       // ms between waves
+  playerDmg: 58,
+  playerCD: 750,             // ms attack cooldown
+  melee: { hp: 80, dmg: 12, range: 0.06, atkSpd: 1300, gold: 21, speed: 0.0006 },
+  caster: { hp: 44, dmg: 18, range: 0.08, atkSpd: 1600, gold: 14, speed: 0.0006 },
+  aggroRange: 0.12,          // z distance to start fighting
+  laneSpread: 0.5,          // x spread for 3 lanes
+};
+
+// ===== Game state =====
 let minions = [];
 let effects = [];
-let cs = 0, miss = 0, gold = 0;
-let timeLeft = 600;
+let particles = [];
 let running = false;
+let cs = 0, miss = 0, gold = 0;
+let timeLeft = 600;         // 10 min in seconds
 let waveCount = 0;
 let lastWave = 0;
 let lastAttack = 0;
-let attackCD = 800;
-let playerDmg = 60;
 let targetMinion = null;
 let timerInterval = null;
+let lastFrame = 0;
 
-const PLAYER_X = 60;
-const PLAYER_Y = H / 2;
-const ENEMY_X = W - 60;
-
-// ===== Minion Types =====
-const TYPES = {
-  melee:  { hp: 80, dmg: 12, range: 35, aspd: 1200, speed: 0.35, gold: 21, size: 9 },
-  caster: { hp: 40, dmg: 20, range: 50, aspd: 1500, speed: 0.35, gold: 14, size: 7 },
-};
-
-class Minion {
-  constructor(team, type, lane) {
-    const t = TYPES[type];
-    this.team = team;
-    this.type = type;
-    this.maxHp = t.hp;
-    this.hp = t.hp;
-    this.dmg = t.dmg;
-    this.range = t.range;
-    this.aspd = t.aspd;
-    this.speed = t.speed;
-    this.gold = t.gold;
-    this.size = t.size;
-    this.color = team === 'blue' ? '#3b82f6' : '#ef4444';
-    this.glow = team === 'blue' ? 'rgba(59,130,246,0.3)' : 'rgba(239,68,68,0.3)';
-    this.x = team === 'blue' ? PLAYER_X + 20 : ENEMY_X - 20;
-    this.y = H / 2 + (lane - 1) * 22;
-    this.lastAtk = 0;
-    this.target = null;
-    this.alive = true;
-    this.deadTime = 0;
-  }
-
-  update(dt, now) {
-    if (!this.alive) return;
-
-    if (!this.target || !this.target.alive) {
-      this.target = findNearestEnemy(this);
-    }
-
-    if (this.target) {
-      const dx = this.target.x - this.x;
-      const dist = Math.abs(dx);
-      if (dist > this.range) {
-        this.x += Math.sign(dx) * this.speed * dt;
-      } else if (now - this.lastAtk > this.aspd) {
-        this.lastAtk = now;
-        this.target.hp -= this.dmg;
-        effects.push({ type: 'minion_atk', from: this.x, to: this.target.x, y: this.y, life: 100 });
-        if (this.target.hp <= 0 && this.target.alive) {
-          this.target.alive = false;
-          this.target.deadTime = now;
-          if (this.target.team === 'red') {
-            miss++; // player missed a CS
-            updateHUD();
-          }
-        }
-      }
-    } else {
-      this.x += (this.team === 'blue' ? 1 : -1) * this.speed * dt;
-    }
-  }
-
-  draw() {
-    if (!this.alive) return;
-    // glow
-    ctx.fillStyle = this.glow;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size + 4, 0, Math.PI * 2);
-    ctx.fill();
-    // body
-    ctx.fillStyle = this.color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fill();
-    // type letter
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 8px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(this.type === 'melee' ? 'M' : 'C', this.x, this.y + 3);
-    // hp bar
-    const bw = 28, bh = 3;
-    const bx = this.x - bw / 2;
-    const by = this.y - this.size - 7;
-    ctx.fillStyle = '#222';
-    ctx.fillRect(bx, by, bw, bh);
-    const pct = Math.max(0, this.hp / this.maxHp);
-    ctx.fillStyle = pct > 0.5 ? '#4ade80' : pct > 0.25 ? '#eab308' : '#ef4444';
-    ctx.fillRect(bx, by, bw * pct, bh);
-  }
-}
-
-function findNearestEnemy(m) {
-  let best = null, bestD = Infinity;
-  for (const e of minions) {
-    if (!e.alive || e.team === m.team) continue;
-    const d = Math.abs(e.x - m.x);
-    if (d < bestD) { bestD = d; best = e; }
-  }
-  return best;
+// ===== Minion =====
+let minionId = 0;
+function makeMinion(team, type, laneIdx) {
+  const c = CFG[type];
+  const lanes = [-CFG.laneSpread, 0, CFG.laneSpread];
+  const x = lanes[laneIdx] + (Math.random() - 0.5) * 0.06;
+  const z = team === 'blue' ? -0.05 : 1.05; // start off-screen
+  return {
+    id: ++minionId,
+    team, type, x, z,
+    laneIdx,
+    maxHp: c.hp, hp: c.hp,
+    dmg: c.dmg, range: c.range, atkSpd: c.atkSpd,
+    gold: c.gold, speed: c.speed,
+    lastAtk: 0,
+    target: null,
+    alive: true,
+    deathT: 0,
+    hitFlash: 0,
+  };
 }
 
 function spawnWave() {
   waveCount++;
   for (let i = 0; i < 3; i++) {
-    minions.push(new Minion('blue', 'melee', i));
-    minions.push(new Minion('red', 'melee', i));
-    minions.push(new Minion('blue', 'caster', i));
-    minions.push(new Minion('red', 'caster', i));
+    minions.push(makeMinion('blue', i < 3 ? 'melee' : 'caster', i));
+    minions.push(makeMinion('red', i < 3 ? 'melee' : 'caster', i));
+  }
+  // Add casters
+  for (let i = 0; i < 3; i++) {
+    minions.push(makeMinion('blue', 'caster', i));
+    minions.push(makeMinion('red', 'caster', i));
   }
 }
 
-// ===== Input =====
-function getCanvasPos(e) {
-  const rect = canvas.getBoundingClientRect();
-  const scale = W / rect.width;
-  const cx = e.touches ? e.touches[0].clientX : e.clientX;
-  const cy = e.touches ? e.touches[0].clientY : e.clientY;
-  return { x: (cx - rect.left) * scale, y: (cy - rect.top) * scale };
+// Actually simpler wave: 3 melee + 3 caster
+function spawnWaveReal() {
+  waveCount++;
+  for (let i = 0; i < 3; i++) {
+    minions.push(makeMinion('blue', 'melee', i));
+    minions.push(makeMinion('red', 'melee', i));
+    minions.push(makeMinion('blue', 'caster', i));
+    minions.push(makeMinion('red', 'caster', i));
+  }
 }
 
-function handleAttack(e) {
-  e.preventDefault();
-  if (!running) return;
-  const now = performance.now();
-  if (now - lastAttack < attackCD) return;
-
-  const { x, y } = getCanvasPos(e);
-  let clicked = null, minD = Infinity;
-  for (const m of minions) {
-    if (!m.alive || m.team !== 'red') continue;
-    const d = Math.hypot(m.x - x, m.y - y);
-    if (d < m.size + 10 && d < minD) { minD = d; clicked = m; }
+// ===== Combat =====
+function findNearestEnemy(m) {
+  let best = null, bestDist = Infinity;
+  for (const e of minions) {
+    if (!e.alive || e.team === m.team) continue;
+    const dz = Math.abs(e.z - m.z);
+    const dx = Math.abs(e.x - m.x);
+    const dist = dz + dx * 0.3;
+    if (dist < bestDist) { bestDist = dist; best = e; }
   }
-  if (!clicked) return;
+  return best;
+}
 
+function updateMinion(m, dt, now) {
+  if (!m.alive) {
+    m.deathT += dt;
+    return;
+  }
+  if (m.hitFlash > 0) m.hitFlash -= dt;
+
+  if (!m.target || !m.target.alive) m.target = findNearestEnemy(m);
+
+  if (m.target) {
+    const dz = Math.abs(m.target.z - m.z);
+    if (dz > m.range) {
+      // move toward target
+      const dir = m.target.z > m.z ? 1 : -1;
+      m.z += dir * m.speed * dt;
+      // slight lateral movement
+      const ldir = m.target.x > m.x ? 1 : -1;
+      m.x += ldir * m.speed * 0.4 * dt;
+    } else {
+      // in range, attack
+      if (now - m.lastAtk > m.atkSpd) {
+        m.lastAtk = now;
+        m.target.hp -= m.dmg;
+        m.target.hitFlash = 200;
+        // small projectile effect
+        const fp = project(m.x, m.z);
+        const tp = project(m.target.x, m.target.z);
+        effects.push({ x1: fp.sx, y1: fp.sy - 10, x2: tp.sx, y2: tp.sy - 15, t: now, dur: 150, color: m.team === 'blue' ? '#60a5fa' : '#f87171' });
+        if (m.target.hp <= 0) {
+          m.target.alive = false;
+          if (m.target.team === 'red') miss++;
+        }
+      }
+    }
+  } else {
+    // no target, walk forward
+    m.z += (m.team === 'blue' ? 1 : -1) * m.speed * dt;
+    // despawn if off screen
+    if (m.z > 1.1 || m.z < -0.1) m.alive = false;
+  }
+}
+
+// ===== Player =====
+function tryAttack(now) {
+  if (!running || !targetMinion || !targetMinion.alive) return;
+  if (now - lastAttack < CFG.playerCD) return;
   lastAttack = now;
-  targetMinion = clicked;
-
-  // Deal damage
-  clicked.hp -= playerDmg;
-  effects.push({ type: 'player_atk', from: PLAYER_X, to: clicked.x, y: clicked.y, life: 150 });
-
-  if (clicked.hp <= 0 && clicked.alive) {
-    clicked.alive = false;
-    clicked.deadTime = now;
+  const m = targetMinion;
+  const fp = project(0, -0.02); // champion at bottom
+  const tp = project(m.x, m.z);
+  // attack effect
+  effects.push({ x1: fp.sx, y1: fp.sy, x2: tp.sx, y2: tp.sy - 15, t: now, dur: 250, color: '#c4b5fd', beam: true });
+  m.hp -= CFG.playerDmg;
+  m.hitFlash = 250;
+  if (m.hp <= 0) {
+    m.alive = false;
     cs++;
-    gold += clicked.gold;
-    effects.push({ type: 'kill', x: clicked.x, y: clicked.y, life: 300, r: 0 });
+    gold += m.gold;
+    // gold particles
+    for (let i = 0; i < 5; i++) {
+      particles.push({ x: tp.sx, y: tp.sy - 15, vx: (Math.random()-0.5)*2, vy: -Math.random()*3-1, life: 600, t: now, gold: true });
+    }
     targetMinion = null;
   }
   updateHUD();
 }
 
-canvas.addEventListener('click', handleAttack);
-canvas.addEventListener('touchstart', handleAttack, { passive: false });
+// ===== Input =====
+function handleInput(cx, cy) {
+  if (!running) return;
+  // find nearest red minion to click
+  let best = null, bestDist = Infinity;
+  for (const m of minions) {
+    if (!m.alive || m.team !== 'red') continue;
+    const p = project(m.x, m.z);
+    const d = Math.hypot(p.sx - cx, p.sy - cy);
+    const hitR = 20 * p.scale + 8;
+    if (d < hitR && d < bestDist) { bestDist = d; best = m; }
+  }
+  if (best) {
+    targetMinion = best;
+    // immediate attack if off cooldown
+    tryAttack(performance.now());
+  }
+}
+cv.addEventListener('click', e => {
+  const r = cv.getBoundingClientRect();
+  handleInput(e.clientX - r.left, e.clientY - r.top);
+});
+cv.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const r = cv.getBoundingClientRect();
+  const t = e.touches[0];
+  handleInput(t.clientX - r.left, t.clientY - r.top);
+}, { passive: false });
 
-// ===== Render =====
-function draw() {
-  ctx.clearRect(0, 0, W, H);
+// ===== Rendering =====
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
 
-  // bg gradient
-  const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, '#0d0b12');
-  grad.addColorStop(1, '#0a0810');
-  ctx.fillStyle = grad;
+function drawBackground() {
+  // grass gradient
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#0d1a0d');
+  g.addColorStop(0.5, '#1a2814');
+  g.addColorStop(1, '#1e2e16');
+  ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
 
-  // lane path
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-  ctx.lineWidth = 40;
+  // Lane path (trapezoid)
+  const topY = H * 0.08, botY = H * 0.88;
+  const topW = W * 0.12, botW = W * 0.44;
+  ctx.fillStyle = '#2a2218';
   ctx.beginPath();
-  ctx.moveTo(0, H / 2);
-  ctx.lineTo(W, H / 2);
-  ctx.stroke();
-  ctx.lineWidth = 1;
-
-  // center line
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-  ctx.setLineDash([4, 6]);
-  ctx.beginPath();
-  ctx.moveTo(W / 2, 10);
-  ctx.lineTo(W / 2, H - 10);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // tower markers
-  ctx.fillStyle = 'rgba(59,130,246,0.15)';
-  ctx.fillRect(20, H/2 - 30, 16, 60);
-  ctx.fillStyle = 'rgba(239,68,68,0.15)';
-  ctx.fillRect(W - 36, H/2 - 30, 16, 60);
-
-  // player champion marker
-  ctx.fillStyle = '#a78bfa';
-  ctx.beginPath();
-  ctx.arc(PLAYER_X, PLAYER_Y, 8, 0, Math.PI * 2);
+  ctx.moveTo(W/2 - topW, topY);
+  ctx.lineTo(W/2 + topW, topY);
+  ctx.lineTo(W/2 + botW, botY);
+  ctx.lineTo(W/2 - botW, botY);
+  ctx.closePath();
   ctx.fill();
-  ctx.strokeStyle = 'rgba(167,139,250,0.4)';
+  // path edges (lighter)
+  ctx.strokeStyle = 'rgba(90,70,40,0.4)';
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.arc(PLAYER_X, PLAYER_Y, 14, 0, Math.PI * 2);
+  ctx.moveTo(W/2 - topW, topY); ctx.lineTo(W/2 - botW, botY);
+  ctx.moveTo(W/2 + topW, topY); ctx.lineTo(W/2 + botW, botY);
   ctx.stroke();
-  ctx.fillStyle = '#a78bfa';
-  ctx.font = 'bold 9px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('YOU', PLAYER_X, PLAYER_Y - 14);
 
-  // minions
-  for (const m of minions) m.draw();
+  // River (across middle)
+  const riverZ = 0.5;
+  const rp = project(0, riverZ);
+  const rTop = project(0, riverZ + 0.06);
+  const rBot = project(0, riverZ - 0.06);
+  const rTopHalf = W * 0.06 + W * 0.20 * Math.max(0.3, 1 - (riverZ+0.06)*0.55);
+  const rBotHalf = W * 0.06 + W * 0.20 * Math.max(0.3, 1 - (riverZ-0.06)*0.55);
+  ctx.fillStyle = 'rgba(30,60,100,0.35)';
+  ctx.beginPath();
+  ctx.moveTo(W/2 - rTopHalf, rTop.sy);
+  ctx.lineTo(W/2 + rTopHalf, rTop.sy);
+  ctx.lineTo(W/2 + rBotHalf, rBot.sy);
+  ctx.lineTo(W/2 - rBotHalf, rBot.sy);
+  ctx.closePath();
+  ctx.fill();
+
+  // Bushes (decorative circles on sides)
+  for (let z = 0.2; z <= 0.8; z += 0.15) {
+    const p = project(1.5, z);
+    const p2 = project(-1.5, z);
+    ctx.fillStyle = 'rgba(30,60,20,0.5)';
+    ctx.beginPath(); ctx.arc(p.sx, p.sy, 12 * p.scale, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p2.sx, p2.sy, 12 * p2.scale, 0, Math.PI*2); ctx.fill();
+  }
+
+  // Top tower (enemy, far)
+  drawTower(project(0, 0.98), '#991b1b', 'red');
+  // Bottom tower (player, near)
+  drawTower(project(0, 0.02), '#1e40af', 'blue');
+
+  // Vignette
+  const vg = ctx.createRadialGradient(W/2, H/2, H*0.3, W/2, H/2, H*0.7);
+  vg.addColorStop(0, 'transparent');
+  vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function drawTower(p, color, side) {
+  const s = p.scale;
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.beginPath(); ctx.ellipse(p.sx, p.sy, 22*s, 7*s, 0, 0, Math.PI*2); ctx.fill();
+  // base
+  ctx.fillStyle = '#3a3530';
+  roundRect(p.sx - 16*s, p.sy - 30*s, 32*s, 30*s, 4*s); ctx.fill();
+  // top
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(p.sx, p.sy - 34*s, 10*s, 0, Math.PI*2); ctx.fill();
+  // glow
+  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.2;
+  ctx.beginPath(); ctx.arc(p.sx, p.sy - 34*s, 18*s, 0, Math.PI*2); ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function drawChampion() {
+  // Player champion at bottom center
+  const p = project(0, -0.02);
+  const s = 1.1;
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.beginPath(); ctx.ellipse(p.sx, p.sy, 20*s, 7*s, 0, 0, Math.PI*2); ctx.fill();
+  // body
+  ctx.fillStyle = '#7c3aed';
+  roundRect(p.sx - 11*s, p.sy - 30*s, 22*s, 30*s, 7*s); ctx.fill();
+  // head
+  ctx.fillStyle = '#a78bfa';
+  ctx.beginPath(); ctx.arc(p.sx, p.sy - 33*s, 9*s, 0, Math.PI*2); ctx.fill();
+  // weapon glow
+  ctx.fillStyle = 'rgba(196,181,253,0.3)';
+  ctx.beginPath(); ctx.arc(p.sx, p.sy - 20*s, 16*s, 0, Math.PI*2); ctx.fill();
+  // label
+  ctx.fillStyle = '#c4b5fd';
+  ctx.font = `bold ${9*s}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText('YOU', p.sx, p.sy - 42*s);
+}
+
+function drawMinion(m) {
+  const p = project(m.x, m.z);
+  const s = p.scale;
+  const alpha = m.alive ? 1 : Math.max(0, 1 - m.deathT / 500);
+  if (alpha <= 0) return;
+
+  ctx.globalAlpha = alpha;
+
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath(); ctx.ellipse(p.sx, p.sy, 13*s, 4*s, 0, 0, Math.PI*2); ctx.fill();
+
+  const bodyW = 13 * s, bodyH = 20 * s;
+  const bodyX = p.sx - bodyW/2, bodyY = p.sy - bodyH - 2*s;
+  const isBlue = m.team === 'blue';
+  const baseColor = isBlue ? '#3b82f6' : '#ef4444';
+  const darkColor = isBlue ? '#1e40af' : '#991b1b';
+  const lightColor = isBlue ? '#60a5fa' : '#fca5a5';
+
+  // hit flash
+  const flash = m.hitFlash > 0 ? m.hitFlash / 250 : 0;
+
+  // body
+  ctx.fillStyle = flash > 0.5 ? '#fff' : baseColor;
+  roundRect(bodyX, bodyY, bodyW, bodyH, 5*s); ctx.fill();
+  // body shade
+  ctx.fillStyle = darkColor;
+  roundRect(bodyX, bodyY + bodyH * 0.6, bodyW, bodyH * 0.4, 5*s); ctx.fill();
+
+  // head
+  ctx.fillStyle = flash > 0.5 ? '#fff' : lightColor;
+  ctx.beginPath(); ctx.arc(p.sx, bodyY - 2*s, 6*s, 0, Math.PI*2); ctx.fill();
+
+  // type accessory
+  if (m.type === 'caster') {
+    // staff
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 1.5 * s;
+    ctx.beginPath();
+    ctx.moveTo(p.sx + bodyW/2, bodyY + 3*s);
+    ctx.lineTo(p.sx + bodyW/2 + 7*s, bodyY - 8*s);
+    ctx.stroke();
+    // staff tip
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath(); ctx.arc(p.sx + bodyW/2 + 7*s, bodyY - 8*s, 2.5*s, 0, Math.PI*2); ctx.fill();
+  } else {
+    // shield
+    ctx.fillStyle = darkColor;
+    roundRect(bodyX - 3*s, bodyY + 4*s, 5*s, 10*s, 2*s); ctx.fill();
+  }
+
+  // health bar (LOL style)
+  if (m.alive) {
+    const barW = 32 * s, barH = 3.5 * s;
+    const barX = p.sx - barW/2, barY = bodyY - 11*s;
+    // bg
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+    // empty
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(barX, barY, barW, barH);
+    // fill
+    const ratio = Math.max(0, m.hp / m.maxHp);
+    const hpColor = ratio > 0.5 ? '#4ade80' : ratio > 0.25 ? '#fbbf24' : '#ef4444';
+    ctx.fillStyle = hpColor;
+    ctx.fillRect(barX, barY, barW * ratio, barH);
+    // segments
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+    ctx.lineWidth = 0.5;
+    for (let i = 1; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(barX + (barW/4)*i, barY);
+      ctx.lineTo(barX + (barW/4)*i, barY + barH);
+      ctx.stroke();
+    }
+    // last-hit indicator (can be killed by player)
+    if (m.hp <= CFG.playerDmg && m.team === 'red') {
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(barX - 2, barY - 2, barW + 4, barH + 4);
+    }
+  }
 
   // target indicator
-  if (targetMinion && targetMinion.alive) {
-    const pulse = Math.sin(performance.now() / 100) * 3 + targetMinion.size + 6;
+  if (m === targetMinion && m.alive) {
     ctx.strokeStyle = '#fbbf24';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(targetMinion.x, targetMinion.y, pulse, 0, Math.PI * 2);
+    ctx.arc(p.sx, p.sy - 12*s, 16*s, 0, Math.PI*2);
     ctx.stroke();
+    // pulse
+    const pulse = Math.sin(performance.now() / 200) * 2;
+    ctx.strokeStyle = 'rgba(251,191,36,0.3)';
     ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(p.sx, p.sy - 12*s, 18*s + pulse, 0, Math.PI*2);
+    ctx.stroke();
   }
 
-  // effects
-  for (let i = effects.length - 1; i >= 0; i--) {
-    const ef = effects[i];
-    if (ef.type === 'player_atk') {
-      ctx.strokeStyle = `rgba(251,191,36,${ef.life / 150})`;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(ef.from, PLAYER_Y);
-      ctx.lineTo(ef.to, ef.y);
-      ctx.stroke();
-      ctx.lineWidth = 1;
-      ef.life -= 8;
-    } else if (ef.type === 'minion_atk') {
-      ctx.strokeStyle = `rgba(255,255,255,${ef.life / 200})`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(ef.from, ef.y);
-      ctx.lineTo(ef.to, ef.y);
-      ctx.stroke();
-      ef.life -= 6;
-    } else if (ef.type === 'kill') {
-      ctx.strokeStyle = `rgba(74,222,128,${ef.life / 300})`;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(ef.x, ef.y, ef.r, 0, Math.PI * 2);
-      ctx.stroke();
-      ef.r += 1.5;
-      ef.life -= 10;
-    }
-    if (ef.life <= 0) effects.splice(i, 1);
-  }
-
-  // wave indicator
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.font = '11px sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText(`第 ${waveCount} 波`, 10, 18);
+  ctx.globalAlpha = 1;
 }
 
-// ===== Game Loop =====
-let lastFrame = 0;
-function loop(now) {
-  if (!running) return;
-  const dt = (now - lastFrame) / 16.67; // normalize to ~60fps frames
-  lastFrame = now;
-
-  // wave spawn
-  if (now - lastWave > 25000 || lastWave === 0) {
-    spawnWave();
-    lastWave = now;
+function drawEffects(now) {
+  for (let i = effects.length - 1; i >= 0; i--) {
+    const e = effects[i];
+    const t = (now - e.t) / e.dur;
+    if (t >= 1) { effects.splice(i, 1); continue; }
+    const alpha = 1 - t;
+    ctx.strokeStyle = e.color;
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = e.beam ? 2.5 : 1.5;
+    ctx.beginPath();
+    ctx.moveTo(e.x1, e.y1);
+    ctx.lineTo(e.x2, e.y2);
+    ctx.stroke();
+    // impact
+    if (e.beam) {
+      ctx.fillStyle = e.color;
+      ctx.beginPath();
+      ctx.arc(e.x2, e.y2, 4 * (1 - t * 0.5), 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   }
+  // particles
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    const t = (now - p.t) / p.life;
+    if (t >= 1) { particles.splice(i, 1); continue; }
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.08;
+    ctx.fillStyle = p.gold ? '#fbbf24' : '#fff';
+    ctx.globalAlpha = 1 - t;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 2, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
 
-  // update minions
-  for (const m of minions) m.update(dt, now);
+function draw(now) {
+  ctx.clearRect(0, 0, W, H);
+  drawBackground();
 
-  // cleanup dead (after 500ms)
-  minions = minions.filter(m => m.alive || (now - m.deadTime < 500));
+  // sort by z (far first for painter's algorithm)
+  const sorted = minions.filter(m => m.alive || m.deathT < 500).sort((a, b) => b.z - a.z);
+  for (const m of sorted) drawMinion(m);
 
-  // cooldown bar
-  const cdElapsed = now - lastAttack;
-  const cdPct = Math.min(1, cdElapsed / attackCD);
-  document.getElementById('cd-fill').style.width = (cdPct * 100) + '%';
-  document.getElementById('cd-text').textContent = cdPct >= 1 ? '就绪 ✓' : '冷却中...';
+  drawChampion();
+  drawEffects(now);
 
-  draw();
-  requestAnimationFrame(loop);
+  // idle screen
+  if (!running) {
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#a78bfa';
+    ctx.font = 'bold 22px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('LOL 补兵训练器', W/2, H/2 - 10);
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '13px system-ui';
+    ctx.fillText('点击「开始」进入训练', W/2, H/2 + 14);
+  }
 }
 
 // ===== HUD =====
 function updateHUD() {
-  document.getElementById('cs-count').textContent = cs;
-  document.getElementById('miss-count').textContent = miss;
-  document.getElementById('gold-count').textContent = gold;
+  document.getElementById('hud-cs').textContent = cs;
+  document.getElementById('hud-gold').textContent = gold;
+  document.getElementById('hud-miss').textContent = miss;
+  const min = Math.floor(timeLeft / 60);
+  const sec = Math.floor(timeLeft % 60);
+  document.getElementById('hud-time').textContent = `${min}:${String(sec).padStart(2,'0')}`;
 }
-function updateTimer() {
-  const m = Math.floor(timeLeft / 60);
-  const s = Math.floor(timeLeft % 60);
-  document.getElementById('timer').textContent =
-    `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  const elapsed = 600 - timeLeft;
-  document.getElementById('cs-min').textContent =
-    elapsed > 0 ? (cs / (elapsed / 60)).toFixed(1) : '0.0';
-  if (timeLeft <= 0) endGame();
+function updateCD() {
+  const now = performance.now();
+  const since = now - lastAttack;
+  const ratio = Math.min(1, since / CFG.playerCD);
+  document.getElementById('cd-fill').style.width = (ratio * 100) + '%';
+  document.getElementById('cd-text').textContent = ratio >= 1 ? '就绪' : `${Math.ceil(CFG.playerCD - since)}ms`;
 }
 
-// ===== Game Control =====
+// ===== Game loop =====
+function loop(now) {
+  if (!running) { draw(now); return; }
+  const dt = Math.min(50, now - lastFrame);
+  lastFrame = now;
+
+  // timer
+  timeLeft -= dt / 1000;
+  if (timeLeft <= 0) { timeLeft = 0; endGame(); }
+
+  // waves
+  if (now - lastWave > CFG.waveInterval || (waveCount === 0 && now - lastWave > 2000)) {
+    spawnWaveReal();
+    lastWave = now;
+  }
+
+  // update minions
+  for (const m of minions) updateMinion(m, dt, now);
+  // cleanup
+  minions = minions.filter(m => m.alive || m.deathT < 500);
+
+  // auto-attack target
+  if (targetMinion && targetMinion.alive) tryAttack(now);
+  else if (targetMinion && !targetMinion.alive) targetMinion = null;
+
+  updateCD();
+  draw(now);
+  requestAnimationFrame(loop);
+}
+
+// ===== Controls =====
 function startGame() {
-  if (running) return;
   resetGame();
   running = true;
   lastFrame = performance.now();
-  lastWave = 0;
-  timerInterval = setInterval(() => { timeLeft -= 1; updateTimer(); }, 1000);
-  requestAnimationFrame(loop);
+  lastWave = performance.now() - CFG.waveInterval + 2000; // first wave at +2s
+  timerInterval = setInterval(updateHUD, 250);
   document.getElementById('start-btn').disabled = true;
+  requestAnimationFrame(loop);
 }
 
 function endGame() {
@@ -535,11 +636,11 @@ function endGame() {
   document.getElementById('r-rate').textContent = total > 0 ? Math.round(cs/total*100) + '%' : '0%';
   document.getElementById('r-gold').textContent = gold;
   document.getElementById('r-csmin').textContent = (cs / 10).toFixed(1);
-  document.getElementById('result-overlay').classList.add('show');
+  document.getElementById('result').classList.add('show');
 }
 
 function closeResult() {
-  document.getElementById('result-overlay').classList.remove('show');
+  document.getElementById('result').classList.remove('show');
   resetGame();
 }
 
@@ -548,22 +649,25 @@ function resetGame() {
   clearInterval(timerInterval);
   minions = [];
   effects = [];
+  particles = [];
   cs = 0; miss = 0; gold = 0;
   timeLeft = 600;
   waveCount = 0;
   targetMinion = null;
   lastAttack = 0;
   updateHUD();
-  updateTimer();
   document.getElementById('cd-fill').style.width = '0%';
   document.getElementById('cd-text').textContent = '就绪';
   document.getElementById('start-btn').disabled = false;
-  // draw idle screen
-  draw();
+  draw(performance.now());
 }
 
-// idle draw
-draw();
+document.getElementById('start-btn').addEventListener('click', startGame);
+document.getElementById('reset-btn').addEventListener('click', resetGame);
+
+// ===== Init =====
+resize();
+draw(performance.now());
 </script>
 </body>
 </html>
